@@ -11,6 +11,7 @@ const vendorValidationSchema = Yup.object().shape({
     .trim()
     .min(3, 'Company legal name must be at least 3 characters')
     .max(255, 'Company name is too long')
+    .matches(/^[a-zA-Z0-9\s]+$/, 'Company name must contain letters, numbers, and spaces only. No special characters allowed.')
     .test('not-single-word', 'Please enter the full legal business name (e.g. Acme Technologies Pvt Ltd). Single words not accepted.', (val) => {
       if (!val) return false;
       return val.trim().split(/\s+/).length >= 2;
@@ -20,7 +21,7 @@ const vendorValidationSchema = Yup.object().shape({
     .trim()
     .min(3, 'Contact person name must be at least 3 characters')
     .max(255, 'Contact person name is too long')
-    .matches(/^[a-zA-Z\s.'-]+$/, 'Contact person name must contain letters and spaces only')
+    .matches(/^[a-zA-Z\s]+$/, 'Contact person name must contain letters and spaces only. No numbers or special characters allowed.')
     .test('full-name', 'Please enter full contact name (First & Last name, e.g. Rohan Sharma). Single words not accepted.', (val) => {
       if (!val) return false;
       return val.trim().split(/\s+/).length >= 2;
@@ -33,7 +34,8 @@ const vendorValidationSchema = Yup.object().shape({
     .required('Registered corporate email is required'),
   phone: Yup.string()
     .trim()
-    .test('valid-phone', 'Must be a valid phone number with at least 10 digits (e.g. +91 98765 43210). Words are not accepted.', (val) => {
+    .matches(/^[0-9+\s]+$/, 'Phone number must contain numbers and spaces only. No special characters allowed.')
+    .test('valid-phone', 'Must be a valid phone number with 10 to 15 digits (e.g. +91 98765 43210). Words/letters not accepted.', (val) => {
       if (!val) return false;
       const digits = val.replace(/\D/g, '');
       return digits.length >= 10 && digits.length <= 15 && !/[a-zA-Z]/.test(val);
@@ -42,6 +44,7 @@ const vendorValidationSchema = Yup.object().shape({
   address: Yup.string()
     .trim()
     .min(10, 'Registered office address must be at least 10 characters')
+    .matches(/^[a-zA-Z0-9\s,.-]+$/, 'Address must contain letters, numbers, spaces, commas, and dots only. Special characters are not allowed.')
     .test('address-words', 'Please enter a complete registered office address (at least 3 words). Single words not accepted.', (val) => {
       if (!val) return false;
       return val.trim().split(/\s+/).length >= 3;
@@ -51,7 +54,11 @@ const vendorValidationSchema = Yup.object().shape({
     .trim()
     .transform((val) => (val ? val.toUpperCase().replace(/\s+/g, '') : val))
     .matches(
-      /^(?:[LUlu][0-9]{5}[A-Za-z]{2}[0-9]{4}[A-Za-z]{3}[0-9]{6}|(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9-]{7,25})$/,
+      /^[A-Za-z0-9]{7,25}$/,
+      'Registration Number / CIN must contain uppercase letters and numbers only. No special characters allowed.'
+    )
+    .matches(
+      /^(?:[LUlu][0-9]{5}[A-Za-z]{2}[0-9]{4}[A-Za-z]{3}[0-9]{6}|(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9]{7,25})$/,
       'Must be a valid 21-character CIN (e.g. U72900KA2021PTC145678) or Registration ID with letters & digits. Single words not accepted.'
     )
     .required('Company registration number / CIN is required'),
@@ -59,20 +66,24 @@ const vendorValidationSchema = Yup.object().shape({
     .trim()
     .transform((val) => (val ? val.toUpperCase().replace(/\s+/g, '') : val))
     .matches(
-      /^(?:[0-9]{2}[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}[1-9A-Za-z]{1}[Zz][0-9A-Za-z]{1}|(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9-]{9,18})$/,
+      /^[A-Za-z0-9]{9,18}$/,
+      'GSTIN / Tax ID must contain letters and numbers only. No special characters allowed.'
+    )
+    .matches(
+      /^(?:[0-9]{2}[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}[1-9A-Za-z]{1}[Zz][0-9A-Za-z]{1}|(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9]{9,18})$/,
       'Must be a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5) or official Tax ID with letters & digits. Single words not accepted.'
     )
     .required('GSTIN or official Tax ID is required'),
   bank_account_number: Yup.string()
     .trim()
-    .matches(/^[0-9]{9,18}$/, 'Must be between 9 and 18 numeric digits only (e.g. 987654321098). Letters and words are not accepted.')
+    .matches(/^[0-9]{9,18}$/, 'Must be between 9 and 18 numeric digits only (e.g. 987654321098). No letters or special characters allowed.')
     .required('Settlement bank account number is required'),
   ifsc_code: Yup.string()
     .trim()
     .transform((val) => (val ? val.toUpperCase().replace(/\s+/g, '') : val))
     .matches(
       /^[A-Za-z]{4}0[A-Za-z0-9]{6}$/,
-      'Must be a valid 11-character IFSC code (e.g. HDFC0001234: 4 letters + 0 + 6 alphanumeric). Single words not accepted.'
+      'Must be a valid 11-character IFSC code (e.g. HDFC0001234: 4 letters + 0 + 6 alphanumeric). No special characters allowed.'
     )
     .required('Bank IFSC or routing code is required'),
   change_reason: Yup.string().optional(),
@@ -200,13 +211,13 @@ export const VendorFormPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-700">Company Legal Name *</label>
-                <span className="text-[10px] font-mono text-slate-400">Legal Entity (2+ words)</span>
+                <span className="text-[10px] font-mono text-slate-400">Letters & Numbers Only</span>
               </div>
               <input
                 type="text"
                 name="company_name"
                 value={formik.values.company_name}
-                onChange={(e) => formik.setFieldValue('company_name', e.target.value.replace(/[^a-zA-Z0-9\s.,'&()-]/g, ''))}
+                onChange={(e) => formik.setFieldValue('company_name', e.target.value.replace(/[^a-zA-Z0-9\s]/g, ''))}
                 onBlur={formik.handleBlur}
                 placeholder="e.g. Zenith Cloud Technologies Pvt Ltd"
                 className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
@@ -218,7 +229,7 @@ export const VendorFormPage: React.FC = () => {
               {touched.company_name && errors.company_name ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.company_name}</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-0.5">Full registered name (e.g. Acme Technologies Pvt Ltd). Single words not accepted.</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Letters, numbers, and spaces only. No special characters allowed.</p>
               )}
             </div>
 
@@ -231,7 +242,7 @@ export const VendorFormPage: React.FC = () => {
                 type="text"
                 name="contact_person"
                 value={formik.values.contact_person}
-                onChange={(e) => formik.setFieldValue('contact_person', e.target.value.replace(/[^a-zA-Z\s.'-]/g, ''))}
+                onChange={(e) => formik.setFieldValue('contact_person', e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                 onBlur={formik.handleBlur}
                 placeholder="e.g. Rohan Sharma"
                 className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
@@ -243,7 +254,7 @@ export const VendorFormPage: React.FC = () => {
               {touched.contact_person && errors.contact_person ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.contact_person}</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-0.5">Letters and spaces only (First & Last Name). Numbers and single words are blocked.</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Letters and spaces only. No numbers or special characters allowed.</p>
               )}
             </div>
 
@@ -275,13 +286,13 @@ export const VendorFormPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-700">Phone Number *</label>
-                <span className="text-[10px] font-mono text-slate-400">Numbers Only: 10-15 digits</span>
+                <span className="text-[10px] font-mono text-slate-400">Numbers & + Only</span>
               </div>
               <input
                 type="text"
                 name="phone"
                 value={formik.values.phone}
-                onChange={(e) => formik.setFieldValue('phone', e.target.value.replace(/[^0-9+\s-]/g, ''))}
+                onChange={(e) => formik.setFieldValue('phone', e.target.value.replace(/[^0-9+\s]/g, ''))}
                 onBlur={formik.handleBlur}
                 placeholder="e.g. +91 98765 43210"
                 maxLength={18}
@@ -294,7 +305,7 @@ export const VendorFormPage: React.FC = () => {
               {touched.phone && errors.phone ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.phone}</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-0.5">Numeric digits only (10 to 15 digits). Letters and words are strictly blocked.</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Numbers and spaces only (10 to 15 digits). No special characters allowed.</p>
               )}
             </div>
           </div>
@@ -302,13 +313,13 @@ export const VendorFormPage: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-semibold text-slate-700">Registered Office Address *</label>
-              <span className="text-[10px] font-mono text-slate-400">Full Address: 10+ chars, 3+ words</span>
+              <span className="text-[10px] font-mono text-slate-400">No Special Characters</span>
             </div>
             <textarea
               rows={2}
               name="address"
               value={formik.values.address}
-              onChange={formik.handleChange}
+              onChange={(e) => formik.setFieldValue('address', e.target.value.replace(/[^a-zA-Z0-9\s,.-]/g, ''))}
               onBlur={formik.handleBlur}
               placeholder="Full registered address as it appears on official incorporation filings..."
               className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
@@ -320,7 +331,7 @@ export const VendorFormPage: React.FC = () => {
             {touched.address && errors.address ? (
               <p className="text-[11px] text-red-500 mt-1">{errors.address}</p>
             ) : (
-              <p className="text-[10px] text-slate-400 mt-0.5">Please provide full registered office address (at least 10 characters and 3+ words).</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Letters, numbers, commas, and dots only. Special characters are blocked.</p>
             )}
           </div>
         </div>
@@ -335,15 +346,16 @@ export const VendorFormPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-700">Registration Number / CIN *</label>
-                <span className="text-[10px] font-mono text-slate-400">21-char CIN / Reg ID</span>
+                <span className="text-[10px] font-mono text-slate-400">Letters & Numbers (No Symbols)</span>
               </div>
               <input
                 type="text"
                 name="registration_number"
                 value={formik.values.registration_number}
-                onChange={(e) => formik.setFieldValue('registration_number', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                onChange={(e) => formik.setFieldValue('registration_number', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                 onBlur={formik.handleBlur}
                 placeholder="E.G. U72900KA2021PTC145678"
+                maxLength={25}
                 className={`w-full text-xs font-mono uppercase rounded-xl border p-2.5 outline-none transition-all ${
                   touched.registration_number && errors.registration_number
                     ? 'border-red-400 bg-red-50/20'
@@ -353,22 +365,23 @@ export const VendorFormPage: React.FC = () => {
               {touched.registration_number && errors.registration_number ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.registration_number}</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-0.5">Must be valid CIN or alphanumeric registration with letters & numbers.</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Letters and numbers only. No special characters or spaces allowed.</p>
               )}
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-700">GST / Tax Identification # *</label>
-                <span className="text-[10px] font-mono text-slate-400">15-char GSTIN</span>
+                <span className="text-[10px] font-mono text-slate-400">15-char (No Symbols)</span>
               </div>
               <input
                 type="text"
                 name="gst_number"
                 value={formik.values.gst_number}
-                onChange={(e) => formik.setFieldValue('gst_number', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                onChange={(e) => formik.setFieldValue('gst_number', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                 onBlur={formik.handleBlur}
                 placeholder="E.G. 29ABCDE1234F1Z5"
+                maxLength={15}
                 className={`w-full text-xs font-mono uppercase rounded-xl border p-2.5 outline-none transition-all ${
                   touched.gst_number && errors.gst_number
                     ? 'border-red-400 bg-red-50/20'
@@ -378,14 +391,14 @@ export const VendorFormPage: React.FC = () => {
               {touched.gst_number && errors.gst_number ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.gst_number}</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-0.5">Must be valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5) or Tax ID.</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">15 alphanumeric characters only. No special characters allowed.</p>
               )}
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-700">Bank Account Number *</label>
-                <span className="text-[10px] font-mono text-slate-400">9-18 Digits (Numbers only)</span>
+                <span className="text-[10px] font-mono text-slate-400">Digits Only (No Symbols)</span>
               </div>
               <input
                 type="text"
@@ -404,20 +417,20 @@ export const VendorFormPage: React.FC = () => {
               {touched.bank_account_number && errors.bank_account_number ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.bank_account_number}</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-0.5">Numeric digits only. Letters and single words are not accepted.</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">9 to 18 numeric digits only. No letters or special characters allowed.</p>
               )}
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-700">Bank IFSC / Routing Code *</label>
-                <span className="text-[10px] font-mono text-slate-400">11-char IFSC</span>
+                <span className="text-[10px] font-mono text-slate-400">11-char (No Symbols)</span>
               </div>
               <input
                 type="text"
                 name="ifsc_code"
                 value={formik.values.ifsc_code}
-                onChange={(e) => formik.setFieldValue('ifsc_code', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                onChange={(e) => formik.setFieldValue('ifsc_code', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                 onBlur={formik.handleBlur}
                 placeholder="E.G. HDFC0001234"
                 maxLength={11}
@@ -430,7 +443,7 @@ export const VendorFormPage: React.FC = () => {
               {touched.ifsc_code && errors.ifsc_code ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.ifsc_code}</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-0.5">Format: 4 letters + 0 + 6 alphanumeric (e.g. HDFC0001234).</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Format: 4 letters + 0 + 6 alphanumeric. No special characters allowed.</p>
               )}
             </div>
           </div>
