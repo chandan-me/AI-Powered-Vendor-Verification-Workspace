@@ -1,6 +1,3 @@
--- VendorVerify AI Relational Database Schema
--- Target: MySQL 8.0+
-
 CREATE DATABASE IF NOT EXISTS vendorverify;
 USE vendorverify;
 
