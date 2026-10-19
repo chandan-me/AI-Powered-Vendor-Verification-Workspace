@@ -198,27 +198,41 @@ export const VendorFormPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Company Legal Name *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Company Legal Name *</label>
+                <span className="text-[10px] font-mono text-slate-400">Legal Entity (2+ words)</span>
+              </div>
               <input
                 type="text"
-                {...getFieldProps('company_name')}
-                placeholder="e.g. ABC Technologies Pvt Ltd"
+                name="company_name"
+                value={formik.values.company_name}
+                onChange={(e) => formik.setFieldValue('company_name', e.target.value.replace(/[^a-zA-Z0-9\s.,'&()-]/g, ''))}
+                onBlur={formik.handleBlur}
+                placeholder="e.g. Zenith Cloud Technologies Pvt Ltd"
                 className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
                   touched.company_name && errors.company_name
                     ? 'border-red-400 bg-red-50/20'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.company_name && errors.company_name && (
+              {touched.company_name && errors.company_name ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.company_name}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Full registered name (e.g. Acme Technologies Pvt Ltd). Single words not accepted.</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Person Name *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Contact Person Name *</label>
+                <span className="text-[10px] font-mono text-slate-400">Letters Only</span>
+              </div>
               <input
                 type="text"
-                {...getFieldProps('contact_person')}
+                name="contact_person"
+                value={formik.values.contact_person}
+                onChange={(e) => formik.setFieldValue('contact_person', e.target.value.replace(/[^a-zA-Z\s.'-]/g, ''))}
+                onBlur={formik.handleBlur}
                 placeholder="e.g. Rohan Sharma"
                 className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
                   touched.contact_person && errors.contact_person
@@ -226,51 +240,76 @@ export const VendorFormPage: React.FC = () => {
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.contact_person && errors.contact_person && (
+              {touched.contact_person && errors.contact_person ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.contact_person}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Letters and spaces only (First & Last Name). Numbers and single words are blocked.</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Registered Email *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Registered Email *</label>
+                <span className="text-[10px] font-mono text-slate-400">name@domain.com</span>
+              </div>
               <input
                 type="email"
-                {...getFieldProps('email')}
-                placeholder="e.g. compliance@abctechnologies.com"
+                name="email"
+                value={formik.values.email}
+                onChange={(e) => formik.setFieldValue('email', e.target.value.toLowerCase().replace(/[^a-z0-9@._+-]/g, ''))}
+                onBlur={formik.handleBlur}
+                placeholder="e.g. compliance@zenithcloud.com"
                 className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
                   touched.email && errors.email
                     ? 'border-red-400 bg-red-50/20'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.email && errors.email && (
+              {touched.email && errors.email ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.email}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Valid corporate email format.</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Phone Number *</label>
+                <span className="text-[10px] font-mono text-slate-400">Numbers Only: 10-15 digits</span>
+              </div>
               <input
                 type="text"
-                {...getFieldProps('phone')}
+                name="phone"
+                value={formik.values.phone}
+                onChange={(e) => formik.setFieldValue('phone', e.target.value.replace(/[^0-9+\s-]/g, ''))}
+                onBlur={formik.handleBlur}
                 placeholder="e.g. +91 98765 43210"
+                maxLength={18}
                 className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
                   touched.phone && errors.phone
                     ? 'border-red-400 bg-red-50/20'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.phone && errors.phone && (
+              {touched.phone && errors.phone ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.phone}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Numeric digits only (10 to 15 digits). Letters and words are strictly blocked.</p>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Registered Office Address *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700">Registered Office Address *</label>
+              <span className="text-[10px] font-mono text-slate-400">Full Address: 10+ chars, 3+ words</span>
+            </div>
             <textarea
               rows={2}
-              {...getFieldProps('address')}
+              name="address"
+              value={formik.values.address}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
               placeholder="Full registered address as it appears on official incorporation filings..."
               className={`w-full text-xs rounded-xl border p-2.5 outline-none transition-all ${
                 touched.address && errors.address
@@ -278,8 +317,10 @@ export const VendorFormPage: React.FC = () => {
                   : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
               }`}
             />
-            {touched.address && errors.address && (
+            {touched.address && errors.address ? (
               <p className="text-[11px] text-red-500 mt-1">{errors.address}</p>
+            ) : (
+              <p className="text-[10px] text-slate-400 mt-0.5">Please provide full registered office address (at least 10 characters and 3+ words).</p>
             )}
           </div>
         </div>
