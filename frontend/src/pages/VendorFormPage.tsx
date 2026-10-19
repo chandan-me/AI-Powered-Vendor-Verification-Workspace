@@ -9,47 +9,71 @@ import { api } from '../api/client';
 const vendorValidationSchema = Yup.object().shape({
   company_name: Yup.string()
     .trim()
-    .min(2, 'Company legal name must be at least 2 characters')
+    .min(3, 'Company legal name must be at least 3 characters')
     .max(255, 'Company name is too long')
+    .test('not-single-word', 'Please enter the full legal business name (e.g. Acme Technologies Pvt Ltd). Single words not accepted.', (val) => {
+      if (!val) return false;
+      return val.trim().split(/\s+/).length >= 2;
+    })
     .required('Company legal name is required'),
   contact_person: Yup.string()
     .trim()
-    .min(2, 'Contact person must be at least 2 characters')
-    .max(255, 'Contact person is too long')
+    .min(3, 'Contact person name must be at least 3 characters')
+    .max(255, 'Contact person name is too long')
+    .matches(/^[a-zA-Z\s.'-]+$/, 'Contact person name must contain letters and spaces only')
+    .test('full-name', 'Please enter full contact name (First & Last name, e.g. Rohan Sharma). Single words not accepted.', (val) => {
+      if (!val) return false;
+      return val.trim().split(/\s+/).length >= 2;
+    })
     .required('Contact person name is required'),
   email: Yup.string()
     .trim()
-    .email('Please enter a valid registered email address')
+    .email('Please enter a valid corporate email address (e.g. compliance@company.com)')
+    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Please enter a valid corporate email address')
     .required('Registered corporate email is required'),
   phone: Yup.string()
     .trim()
-    .min(7, 'Phone number must be at least 7 digits')
-    .max(50, 'Phone number is too long')
+    .test('valid-phone', 'Must be a valid phone number with at least 10 digits (e.g. +91 98765 43210). Words are not accepted.', (val) => {
+      if (!val) return false;
+      const digits = val.replace(/\D/g, '');
+      return digits.length >= 10 && digits.length <= 15 && !/[a-zA-Z]/.test(val);
+    })
     .required('Phone number is required'),
   address: Yup.string()
     .trim()
-    .min(5, 'Detailed registered office address must be at least 5 characters')
+    .min(10, 'Registered office address must be at least 10 characters')
+    .test('address-words', 'Please enter a complete registered office address (at least 3 words). Single words not accepted.', (val) => {
+      if (!val) return false;
+      return val.trim().split(/\s+/).length >= 3;
+    })
     .required('Registered office address is required'),
   registration_number: Yup.string()
     .trim()
-    .min(2, 'Registration number / CIN is too short')
-    .max(100, 'Registration number is too long')
+    .transform((val) => (val ? val.toUpperCase().replace(/\s+/g, '') : val))
+    .matches(
+      /^(?:[LUlu][0-9]{5}[A-Za-z]{2}[0-9]{4}[A-Za-z]{3}[0-9]{6}|(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9-]{7,25})$/,
+      'Must be a valid 21-character CIN (e.g. U72900KA2021PTC145678) or Registration ID with letters & digits. Single words not accepted.'
+    )
     .required('Company registration number / CIN is required'),
   gst_number: Yup.string()
     .trim()
-    .min(5, 'GST / Tax identification number is too short')
-    .max(100, 'GST / Tax ID is too long')
+    .transform((val) => (val ? val.toUpperCase().replace(/\s+/g, '') : val))
+    .matches(
+      /^(?:[0-9]{2}[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}[1-9A-Za-z]{1}[Zz][0-9A-Za-z]{1}|(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9-]{9,18})$/,
+      'Must be a valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5) or official Tax ID with letters & digits. Single words not accepted.'
+    )
     .required('GSTIN or official Tax ID is required'),
   bank_account_number: Yup.string()
     .trim()
-    .matches(/^[a-zA-Z0-9]+$/, 'Bank account number must contain alphanumeric characters only')
-    .min(5, 'Bank account number must be at least 5 characters')
-    .max(100, 'Bank account number is too long')
+    .matches(/^[0-9]{9,18}$/, 'Must be between 9 and 18 numeric digits only (e.g. 987654321098). Letters and words are not accepted.')
     .required('Settlement bank account number is required'),
   ifsc_code: Yup.string()
     .trim()
-    .min(4, 'IFSC / routing code must be at least 4 characters')
-    .max(50, 'IFSC code is too long')
+    .transform((val) => (val ? val.toUpperCase().replace(/\s+/g, '') : val))
+    .matches(
+      /^[A-Za-z]{4}0[A-Za-z0-9]{6}$/,
+      'Must be a valid 11-character IFSC code (e.g. HDFC0001234: 4 letters + 0 + 6 alphanumeric). Single words not accepted.'
+    )
     .required('Bank IFSC or routing code is required'),
   change_reason: Yup.string().optional(),
 });
@@ -268,70 +292,104 @@ export const VendorFormPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Registration Number / CIN *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Registration Number / CIN *</label>
+                <span className="text-[10px] font-mono text-slate-400">21-char CIN / Reg ID</span>
+              </div>
               <input
                 type="text"
-                {...getFieldProps('registration_number')}
-                placeholder="e.g. U72900KA2021PTC145678"
+                name="registration_number"
+                value={formik.values.registration_number}
+                onChange={(e) => formik.setFieldValue('registration_number', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                onBlur={formik.handleBlur}
+                placeholder="E.G. U72900KA2021PTC145678"
                 className={`w-full text-xs font-mono uppercase rounded-xl border p-2.5 outline-none transition-all ${
                   touched.registration_number && errors.registration_number
                     ? 'border-red-400 bg-red-50/20'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.registration_number && errors.registration_number && (
+              {touched.registration_number && errors.registration_number ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.registration_number}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Must be valid CIN or alphanumeric registration with letters & numbers.</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">GST / Tax Identification # *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">GST / Tax Identification # *</label>
+                <span className="text-[10px] font-mono text-slate-400">15-char GSTIN</span>
+              </div>
               <input
                 type="text"
-                {...getFieldProps('gst_number')}
-                placeholder="e.g. 29ABCDE1234F1Z5"
+                name="gst_number"
+                value={formik.values.gst_number}
+                onChange={(e) => formik.setFieldValue('gst_number', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                onBlur={formik.handleBlur}
+                placeholder="E.G. 29ABCDE1234F1Z5"
                 className={`w-full text-xs font-mono uppercase rounded-xl border p-2.5 outline-none transition-all ${
                   touched.gst_number && errors.gst_number
                     ? 'border-red-400 bg-red-50/20'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.gst_number && errors.gst_number && (
+              {touched.gst_number && errors.gst_number ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.gst_number}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Must be valid 15-character GSTIN (e.g. 29ABCDE1234F1Z5) or Tax ID.</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Bank Account Number *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Bank Account Number *</label>
+                <span className="text-[10px] font-mono text-slate-400">9-18 Digits (Numbers only)</span>
+              </div>
               <input
                 type="text"
-                {...getFieldProps('bank_account_number')}
+                name="bank_account_number"
+                value={formik.values.bank_account_number}
+                onChange={(e) => formik.setFieldValue('bank_account_number', e.target.value.replace(/\D/g, ''))}
+                onBlur={formik.handleBlur}
                 placeholder="e.g. 987654321098"
+                maxLength={18}
                 className={`w-full text-xs font-mono rounded-xl border p-2.5 outline-none transition-all ${
                   touched.bank_account_number && errors.bank_account_number
                     ? 'border-red-400 bg-red-50/20'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.bank_account_number && errors.bank_account_number && (
+              {touched.bank_account_number && errors.bank_account_number ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.bank_account_number}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Numeric digits only. Letters and single words are not accepted.</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Bank IFSC / Routing Code *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Bank IFSC / Routing Code *</label>
+                <span className="text-[10px] font-mono text-slate-400">11-char IFSC</span>
+              </div>
               <input
                 type="text"
-                {...getFieldProps('ifsc_code')}
-                placeholder="e.g. HDFC0001234"
+                name="ifsc_code"
+                value={formik.values.ifsc_code}
+                onChange={(e) => formik.setFieldValue('ifsc_code', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                onBlur={formik.handleBlur}
+                placeholder="E.G. HDFC0001234"
+                maxLength={11}
                 className={`w-full text-xs font-mono uppercase rounded-xl border p-2.5 outline-none transition-all ${
                   touched.ifsc_code && errors.ifsc_code
                     ? 'border-red-400 bg-red-50/20'
                     : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                 }`}
               />
-              {touched.ifsc_code && errors.ifsc_code && (
+              {touched.ifsc_code && errors.ifsc_code ? (
                 <p className="text-[11px] text-red-500 mt-1">{errors.ifsc_code}</p>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-0.5">Format: 4 letters + 0 + 6 alphanumeric (e.g. HDFC0001234).</p>
               )}
             </div>
           </div>
