@@ -26,10 +26,9 @@ export const Sidebar: React.FC = () => {
                   to={item.to}
                   end={item.to === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                      isActive
-                        ? 'bg-brand-50 text-brand-700 shadow-xs border border-brand-200/60'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive
+                      ? 'bg-brand-50 text-brand-700 shadow-xs border border-brand-200/60'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`
                   }
                 >
@@ -61,8 +60,7 @@ export const Sidebar: React.FC = () => {
 
       {/* Footer Info */}
       <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-400 space-y-1">
-        <p className="font-semibold text-slate-600">VendorVerify AI v1.0</p>
-        <p>Enterprise Assessment Build</p>
+        <p className="font-bold text-slate-900">AI-Powered Vendor Verification Workspace</p>
       </div>
     </aside>
   );
