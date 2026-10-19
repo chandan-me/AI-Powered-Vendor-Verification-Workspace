@@ -13,6 +13,12 @@
 
 ---
 
+## 🎥 10-Minute Video Demonstration
+> **Watch the Complete Walkthrough:** [Click to Watch the Video Demo](YOUR_VIDEO_LINK_HERE)  
+> *(Covers: End-to-End Onboarding, Strict Input Validation, AI Extraction, 5-Way Comparison, OpenCorporates API, Mailpit Email Automation, and Snapshot Version Rollback)*
+
+---
+
 ## Executive Summary
 
 Manual vendor compliance and onboarding in enterprise procurement is traditionally slow, error-prone, and susceptible to invoice and identity fraud. Companies must manually cross-reference Certificates of Incorporation, tax documents (GST/PAN), and banking records against corporate registries.
