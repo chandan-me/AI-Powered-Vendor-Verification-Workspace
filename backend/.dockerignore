@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+private_uploads/*
+!private_uploads/.gitkeep
+sample_documents/*
+!sample_documents/.gitkeep
+venv
+.venv
+.git
+.vscode
+.idea
