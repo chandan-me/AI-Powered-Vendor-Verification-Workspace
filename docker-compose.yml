@@ -21,11 +21,12 @@ services:
     restart: always
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=mysql+pymysql://root:password123@db:3306/vendorverify
       - BACKEND_URL=http://localhost:8000
       - FRONTEND_URL=http://localhost:5173
-      - DEMO_MODE=true
     depends_on:
       - db
     volumes:

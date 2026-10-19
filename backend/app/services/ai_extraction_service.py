@@ -46,7 +46,7 @@ class AIExtractionService:
         model_used = "local-parser"
 
         # 2. Check if OpenAI is configured
-        if settings.is_openai_configured and not settings.DEMO_MODE:
+        if settings.is_openai_configured:
             try:
                 client = OpenAI(api_key=settings.OPENAI_API_KEY)
                 response = client.chat.completions.create(

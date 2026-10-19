@@ -19,7 +19,7 @@ class CompanyVerificationService:
         query = (search_query or vendor.registration_number or vendor.company_name).strip()
         
         # Determine whether to use real OpenCorporates or labeled demo simulation
-        if settings.is_opencorporates_configured and not settings.DEMO_MODE:
+        if settings.is_opencorporates_configured:
             result = cls._call_opencorporates(query, jurisdiction_code, vendor)
         else:
             result = cls._simulate_company_registry(query, jurisdiction_code, vendor)
