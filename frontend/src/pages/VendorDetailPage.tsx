@@ -819,114 +819,234 @@ export const VendorDetailPage: React.FC = () => {
                     </div>
 
                     {/* AI Extraction Results */}
-                    {ext ? (
-                      <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-brand-600" />
-                            <span className="text-xs font-bold text-slate-800">
-                              AI-Extracted Structured Entities (Unverified until reviewed)
-                            </span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
-                              Model: {ext.model_used}
-                            </span>
-                            {ext.is_user_corrected && (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Reviewer Corrected
+                    {ext ? (() => {
+                      const normalizeFieldVal = (key: string, val: string | null | undefined): string => {
+                        if (!val) return '';
+                        let s = String(val).toLowerCase().trim();
+                        if (key === 'company_name') {
+                          s = s.replace(/\b(pvt\.?\s*ltd\.?|private\s*limited)\b/g, 'pvt ltd')
+                               .replace(/\b(ltd\.?|limited)\b/g, 'ltd')
+                               .replace(/\b(inc\.?|incorporated)\b/g, 'inc')
+                               .replace(/\b(corp\.?|corporation)\b/g, 'corp')
+                               .replace(/[^a-z0-9]/g, '');
+                        } else if (key === 'bank_account_number') {
+                          s = s.replace(/\D/g, '').replace(/^0+/, '');
+                        } else {
+                          s = s.replace(/[^a-z0-9]/g, '');
+                        }
+                        return s;
+                      };
+
+                      const allFieldKeys = [
+                        'company_name',
+                        'registration_number',
+                        'gst_number',
+                        'address',
+                        'bank_account_number',
+                        'ifsc_code',
+                      ];
+
+                      const docDiscrepancies = allFieldKeys.filter((key) => {
+                        const val = editsJson[key] !== undefined ? editsJson[key] : baseJson[key]?.value;
+                        if (!val || !vendor) return false;
+                        const vendorVal = (vendor as any)[key];
+                        if (!vendorVal) return false;
+                        return normalizeFieldVal(key, val) !== normalizeFieldVal(key, vendorVal);
+                      });
+
+                      const hasDocDiscrepancy = docDiscrepancies.length > 0;
+
+                      return (
+                        <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-brand-600" />
+                              <span className="text-xs font-bold text-slate-800">
+                                AI-Extracted Entities from Document
                               </span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
+                                Model: {ext.model_used}
+                              </span>
+                              {hasDocDiscrepancy ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-300 flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3 text-red-600" />
+                                  <span>{docDiscrepancies.length} Discrepancy Flagged</span>
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span>Entities Verified</span>
+                                </span>
+                              )}
+                              {ext.is_user_corrected && (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                  Reviewer Corrected
+                                </span>
+                              )}
+                            </div>
+
+                            {!isEditing ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingDocId(doc.id);
+                                  const currentVals: Record<string, string> = {};
+                                  Object.keys(baseJson).forEach((k) => {
+                                    currentVals[k] = editsJson[k] ?? baseJson[k]?.value ?? '';
+                                  });
+                                  setEditFields(currentVals);
+                                }}
+                                className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1"
+                              >
+                                <Edit className="w-3 h-3" />
+                                <span>Edit Incorrect Extraction</span>
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingDocId(null)}
+                                  className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveCorrections(doc.id)}
+                                  className="px-3 py-1 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs"
+                                >
+                                  Save Corrections
+                                </button>
+                              </div>
                             )}
                           </div>
 
-                          {!isEditing ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingDocId(doc.id);
-                                const currentVals: Record<string, string> = {};
-                                Object.keys(baseJson).forEach((k) => {
-                                  currentVals[k] = editsJson[k] ?? baseJson[k]?.value ?? '';
-                                });
-                                setEditFields(currentVals);
-                              }}
-                              className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1"
-                            >
-                              <Edit className="w-3 h-3" />
-                              <span>Edit Incorrect Extraction</span>
-                            </button>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setEditingDocId(null)}
-                                className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSaveCorrections(doc.id)}
-                                className="px-3 py-1 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs"
-                              >
-                                Save Corrections
-                              </button>
+                          {/* Discrepancy Warning Banner if Document Does Not Match Vendor */}
+                          {hasDocDiscrepancy && (
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-3">
+                              <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                              <div className="text-xs text-red-900 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold">Cross-Source Discrepancy Detected</span>
+                                  <span className="text-[10px] bg-red-200 text-red-900 px-2 py-0.2 rounded font-mono">
+                                    MISMATCH WITH VENDOR PROFILE
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-red-800 leading-relaxed">
+                                  The company information in this document differs from your vendor profile (<strong>"{vendor?.company_name}"</strong>).
+                                  This has been logged as a discrepancy in <strong>Step 4 (AI Comparison Matrix)</strong>.
+                                </p>
+                                <p className="text-[10px] text-slate-500 italic pt-0.5 border-t border-red-200/60">
+                                  💡 <strong>Why does it show "OCR: 96%"?</strong> That score measures the AI's <em>visual text-reading clarity from this PDF document</em> (optical character recognition), NOT whether the document belongs to your vendor profile.
+                                </p>
+                              </div>
                             </div>
                           )}
-                        </div>
 
-                        {/* Fields Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {[
-                            'company_name',
-                            'registration_number',
-                            'gst_number',
-                            'address',
-                            'bank_account_number',
-                            'ifsc_code',
-                          ].map((fieldKey) => {
-                            const fieldData = baseJson[fieldKey] || {};
-                            const userVal = editsJson[fieldKey];
-                            const displayVal = userVal !== undefined ? userVal : fieldData.value;
-                            const conf = fieldData.confidence;
-                            const sourceText = fieldData.source_text;
+                          {/* Fields Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {allFieldKeys.map((fieldKey) => {
+                              const fieldData = baseJson[fieldKey] || {};
+                              const userVal = editsJson[fieldKey];
+                              const displayVal = userVal !== undefined ? userVal : fieldData.value;
+                              const conf = fieldData.confidence;
+                              const sourceText = fieldData.source_text;
 
-                            return (
-                              <div key={fieldKey} className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1">
-                                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase">
-                                  <span>{fieldKey.replace(/_/g, ' ')}</span>
-                                  {conf !== undefined && conf !== null && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-mono">
-                                      {Math.round(conf * 100)}% conf
-                                    </span>
+                              const vendorVal = vendor ? (vendor as any)[fieldKey] : null;
+                              const hasVendorVal = Boolean(vendorVal && String(vendorVal).trim());
+                              const hasExtractedVal = Boolean(displayVal && String(displayVal).trim());
+
+                              const isComparisonPossible = hasVendorVal && hasExtractedVal;
+                              const isFieldMatch = isComparisonPossible && normalizeFieldVal(fieldKey, displayVal) === normalizeFieldVal(fieldKey, vendorVal);
+                              const isFieldMismatch = isComparisonPossible && !isFieldMatch;
+
+                              return (
+                                <div
+                                  key={fieldKey}
+                                  className={`p-3 rounded-xl border transition-all space-y-1.5 ${
+                                    isFieldMismatch
+                                      ? 'bg-red-50/30 border-red-300 ring-1 ring-red-200'
+                                      : isFieldMatch
+                                      ? 'bg-emerald-50/20 border-emerald-300'
+                                      : 'bg-white border-slate-200 shadow-xs'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase">
+                                    <span>{fieldKey.replace(/_/g, ' ')}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      {/* Match vs Mismatch Badge */}
+                                      {isFieldMismatch && (
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-300 font-bold flex items-center gap-1">
+                                          <AlertTriangle className="w-3 h-3 text-red-600" />
+                                          <span>MISMATCH</span>
+                                        </span>
+                                      )}
+                                      {isFieldMatch && (
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold flex items-center gap-1">
+                                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                          <span>MATCH</span>
+                                        </span>
+                                      )}
+                                      {/* Neutral OCR Accuracy Badge */}
+                                      {conf !== undefined && conf !== null && (
+                                        <span
+                                          title="AI OCR Text-Reading Accuracy from PDF (How clearly the text was extracted from this file)"
+                                          className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono border border-slate-200"
+                                        >
+                                          OCR: {Math.round(conf * 100)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editFields[fieldKey] ?? ''}
+                                      onChange={(e) =>
+                                        setEditFields((prev) => ({ ...prev, [fieldKey]: e.target.value }))
+                                      }
+                                      placeholder="Enter corrected value or leave empty..."
+                                      className="w-full text-xs p-1.5 border border-brand-300 rounded-lg outline-none font-semibold text-slate-900 bg-brand-50/20"
+                                    />
+                                  ) : (
+                                    <p className={`text-xs font-bold line-clamp-1 ${isFieldMismatch ? 'text-red-900' : 'text-slate-900'}`}>
+                                      {displayVal || <span className="text-slate-400 font-normal italic">Not extracted</span>}
+                                    </p>
+                                  )}
+
+                                  {/* Mismatch Diff Callout */}
+                                  {isFieldMismatch && (
+                                    <div className="mt-1 pt-1.5 border-t border-red-200 text-[10px] text-red-800 space-y-0.5">
+                                      <div className="flex items-center gap-1 font-semibold text-red-700">
+                                        <AlertTriangle className="w-3 h-3 text-red-600 flex-shrink-0" />
+                                        <span>Differs from Vendor Profile:</span>
+                                      </div>
+                                      <div className="font-mono bg-white p-1 rounded border border-red-200 text-slate-800">
+                                        Expected: <span className="font-bold text-red-900">"{vendorVal}"</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {isFieldMatch && (
+                                    <div className="mt-1 pt-1 border-t border-emerald-100 text-[10px] text-emerald-700 flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                                      <span>Consistent with vendor profile</span>
+                                    </div>
+                                  )}
+
+                                  {sourceText && (
+                                    <p className="text-[10px] text-slate-400 italic line-clamp-1 border-t border-slate-100 pt-1">
+                                      Source: "{sourceText}"
+                                    </p>
                                   )}
                                 </div>
-
-                                {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={editFields[fieldKey] ?? ''}
-                                    onChange={(e) =>
-                                      setEditFields((prev) => ({ ...prev, [fieldKey]: e.target.value }))
-                                    }
-                                    placeholder="Enter corrected value or leave empty..."
-                                    className="w-full text-xs p-1.5 border border-brand-300 rounded-lg outline-none font-semibold text-slate-900 bg-brand-50/20"
-                                  />
-                                ) : (
-                                  <p className="text-xs font-bold text-slate-900 line-clamp-1">
-                                    {displayVal || <span className="text-slate-400 font-normal italic">Not extracted</span>}
-                                  </p>
-                                )}
-
-                                {sourceText && (
-                                  <p className="text-[10px] text-slate-400 italic line-clamp-1 border-t border-slate-100 pt-1">
-                                    Source: "{sourceText}"
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
+                      );
+                    })() : (
                       <div className="p-4 text-center text-slate-400 text-xs">
                         Extraction pending. Click to re-run AI extraction.
                       </div>
